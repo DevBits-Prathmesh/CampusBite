@@ -9,12 +9,15 @@
     "lint": "eslint",
     "cap:sync": "cap sync android",
     "cap:open": "cap open android",
-    "mobile": "next build && cap sync android"
+    "mobile": "cap sync android"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.3",
+    "@capacitor/app": "^8.1.2",
     "@capacitor/core": "^8.5.3",
+    "@capacitor/status-bar": "^8.0.4",
     "next": "16.4.2",
+    "pg": "^8.23.1",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
@@ -22,6 +25,7 @@
     "@capacitor/cli": "^8.5.3",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

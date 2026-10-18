@@ -1,9 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Capacitor loads static files inside the Android WebView, so the app
-  // must export to `out/` instead of running a Node server.
-  output: "export",
+  // API routes talk to Neon, so the app runs as a Node server.
+  // The Android app loads that server through CAPACITOR_SERVER_URL.
   trailingSlash: true,
   images: {
     unoptimized: true,
