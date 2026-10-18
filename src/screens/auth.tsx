@@ -25,9 +25,7 @@ export function SplashScreen() {
   return (
     <div className="flex min-h-dvh flex-col bg-house px-6 pt-[calc(env(safe-area-inset-top)+3.5rem)] pb-[calc(env(safe-area-inset-bottom)+1.5rem)] text-white">
       <div className="flex flex-1 flex-col items-center justify-center text-center">
-        <div className="grid h-24 w-24 place-items-center rounded-[28px] bg-accent shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
-          <span className="text-4xl font-extrabold tracking-tight">CB</span>
-        </div>
+        <img src="/logo.png" alt="" className="h-32 w-32" />
         <p className="mt-8 text-sm font-bold tracking-[0.18em] text-white/70">CAMPUS CANTEEN</p>
         <h1 className="mt-3 text-[2.5rem] font-extrabold leading-none tracking-tight">CampusBite</h1>
         <p className="mt-4 max-w-[16rem] text-lg leading-7 text-white/75">Order ahead. Skip the queue.</p>
@@ -111,7 +109,7 @@ export function RegisterScreen() {
   return (
     <Screen title="Student account" backHref="/">
       <p className="mb-4 text-sm leading-6 text-muted">
-        Sign up is for students. Kitchen, pickup, and admin use the sign-in screen with an account that already exists.
+        This is only for students, to create a new account.
       </p>
       <form
         className="space-y-4"
