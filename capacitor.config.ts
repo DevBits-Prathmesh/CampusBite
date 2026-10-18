@@ -19,14 +19,16 @@ const config: CapacitorConfig = {
   appId: "com.campusbite.app",
   appName: "CampusBite",
   webDir: "public",
-  ...(serverUrl
-    ? {
-        server: {
+  server: {
+    androidScheme: "https",
+    hostname: "localhost",
+    ...(serverUrl
+      ? {
           url: serverUrl,
           cleartext: serverUrl.startsWith("http://"),
-        },
-      }
-    : {}),
+        }
+      : {}),
+  },
 };
 
 export default config;
