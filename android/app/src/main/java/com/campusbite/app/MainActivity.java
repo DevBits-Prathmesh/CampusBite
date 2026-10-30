@@ -1,5 +1,16 @@
 package com.campusbite.app;
 
-import com.getcapacitor.BridgeActivity;
+import android.os.Bundle;
 
-public class MainActivity extends BridgeActivity {}
+import com.getcapacitor.BridgeActivity;
+import com.ionicframework.capacitor.Checkout;
+
+public class MainActivity extends BridgeActivity {
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        // Add the plugin before the bridge is created; Capacitor also auto-loads it
+        // from capacitor.plugins.json after `npx cap sync android`.
+        registerPlugin(Checkout.class);
+        super.onCreate(savedInstanceState);
+    }
+}

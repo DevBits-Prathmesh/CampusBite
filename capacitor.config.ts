@@ -18,7 +18,7 @@ const serverUrl = envValue("CAPACITOR_SERVER_URL");
 const config: CapacitorConfig = {
   appId: "com.campusbite.app",
   appName: "CampusBite",
-  webDir: "public",
+  webDir: "capacitor-web",
   server: {
     androidScheme: "https",
     hostname: "localhost",

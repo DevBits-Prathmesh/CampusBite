@@ -73,6 +73,25 @@ export type AppNotification = {
   readAt: string | null;
 };
 
+export type PaymentKind = "advance" | "balance";
+
+export type RazorpayCheckoutOptions = {
+  key: string;
+  amount: number;
+  currency: "INR";
+  name: string;
+  description: string;
+  order_id: string;
+  prefill: { name: string; email: string };
+  theme: { color: string };
+};
+
+export type RazorpayCheckoutResult = {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+};
+
 export type CartLine = {
   itemId: string;
   quantity: number;

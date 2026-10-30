@@ -1,7 +1,18 @@
 "use client";
 
 import { createContext, useContext, useMemo, useSyncExternalStore, type ReactNode } from "react";
-import type { AppData, Category, MenuItem, OrderStatus, PickupSlot, Role, User } from "@/lib/types";
+import { PaymentCancelledError, openRazorpayCheckout } from "@/lib/payments";
+import type {
+  AppData,
+  Category,
+  MenuItem,
+  OrderStatus,
+  PaymentKind,
+  PickupSlot,
+  RazorpayCheckoutOptions,
+  Role,
+  User,
+} from "@/lib/types";
 
 const TOKEN_KEY = "campusbite.token";
 const CART_KEY = "campusbite.cart";
@@ -23,8 +34,8 @@ type Store = {
   selectSlot: (slotId: string) => Result;
   placeOrder: () => Promise<Result<{ orderId: string }>>;
   cancelOrder: (orderId: string) => Promise<Result>;
-  verifyAdvance: (orderId: string) => Promise<Result>;
-  verifyBalance: (orderId: string) => Promise<Result>;
+  payAdvance: (orderId: string) => Promise<Result>;
+  payBalance: (orderId: string) => Promise<Result>;
   markPreparing: (orderId: string) => Promise<Result>;
   markReady: (orderId: string) => Promise<Result>;
   markCollected: (orderId: string) => Promise<Result>;
@@ -160,6 +171,28 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     : null;
 
   const api = useMemo<Store>(() => {
+    const pay = async (orderId: string, kind: PaymentKind): Promise<Result> => {
+      try {
+        const checkout = await request<RazorpayCheckoutOptions>("/api/payments/razorpay/order/", {
+          method: "POST",
+          body: JSON.stringify({ orderId, kind }),
+        });
+        const result = await openRazorpayCheckout(checkout);
+        await request("/api/payments/razorpay/verify/", {
+          method: "POST",
+          body: JSON.stringify(result),
+        });
+        await refresh();
+        return { ok: true };
+      } catch (error) {
+        if (error instanceof PaymentCancelledError) {
+          return { ok: false, error: error.message };
+        }
+        await refresh().catch(() => {});
+        return { ok: false, error: error instanceof Error ? error.message : "Payment failed." };
+      }
+    };
+
     return {
       ready: isReady,
       problem: loadProblem,
@@ -261,22 +294,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           await request(`/api/orders/${orderId}/`, { method: "POST", body: JSON.stringify({ action: "cancel" }) });
           await refresh();
         }),
-      verifyAdvance: (orderId) =>
-        attempt(async () => {
-          await request(`/api/orders/${orderId}/`, {
-            method: "POST",
-            body: JSON.stringify({ action: "verify-advance" }),
-          });
-          await refresh();
-        }),
-      verifyBalance: (orderId) =>
-        attempt(async () => {
-          await request(`/api/orders/${orderId}/`, {
-            method: "POST",
-            body: JSON.stringify({ action: "verify-balance" }),
-          });
-          await refresh();
-        }),
+      payAdvance: (orderId) => pay(orderId, "advance"),
+      payBalance: (orderId) => pay(orderId, "balance"),
       markPreparing: (orderId) =>
         attempt(async () => {
           await request(`/api/orders/${orderId}/`, { method: "POST", body: JSON.stringify({ action: "preparing" }) });

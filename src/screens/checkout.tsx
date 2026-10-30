@@ -129,9 +129,9 @@ function Row({ label, value, strong = false }: { label: string; value: string; s
 }
 
 export function PayScreen({ orderId }: { orderId: string | null }) {
-  const { data, verifyAdvance } = useStore();
+  const { data, payAdvance } = useStore();
   const order = data.orders.find((entry) => entry.id === orderId);
-  const [phase, setPhase] = useState<"idle" | "verifying" | "done">("idle");
+  const [phase, setPhase] = useState<"idle" | "paying">("idle");
   const [error, setError] = useState("");
 
   if (!order) {
@@ -147,52 +147,52 @@ export function PayScreen({ orderId }: { orderId: string | null }) {
   return (
     <Screen
       title="Advance payment"
-      eyebrow="Test Mode"
+      eyebrow="Razorpay"
       backHref={`/orders/${order.id}/`}
       footer={
         <Button
           className="w-full"
-          disabled={phase === "verifying" || verified}
+          disabled={phase === "paying" || verified}
           onClick={() => {
             setError("");
-            setPhase("verifying");
-            window.setTimeout(() => {
-              void verifyAdvance(order.id).then((result) => {
-                if (!result.ok) {
-                  setPhase("idle");
-                  setError(result.error);
-                  return;
-                }
-                setPhase("done");
-                navigate(`/orders/${order.id}/`);
-              });
-            }, 900);
+            setPhase("paying");
+            void payAdvance(order.id).then((result) => {
+              setPhase("idle");
+              if (!result.ok) {
+                setError(result.error);
+                return;
+              }
+              navigate(`/orders/${order.id}/`);
+            });
           }}
         >
-          {verified ? "Advance already verified" : phase === "verifying" ? "Verifying…" : "Verify payment"}
+          {verified
+            ? "Advance already paid"
+            : phase === "paying"
+              ? "Opening Razorpay…"
+              : `Pay ${formatInr(order.advanceDuePaise)}`}
         </Button>
       }
     >
       <p className="text-sm leading-6 text-muted">
-        The order stays unpaid until the server verifies this amount. A QR image alone is not payment.
+        Pay securely with Razorpay. The order is confirmed only after the canteen server checks the payment signature.
       </p>
       <Card className="mt-4 text-center">
         <p className="text-xs font-bold uppercase tracking-wider text-muted">Order {order.id}</p>
         <p className="mt-2 text-4xl font-extrabold text-green">{formatInr(order.advanceDuePaise)}</p>
         <p className="mt-1 text-sm text-muted">20% of {formatInr(order.subtotalPaise)}</p>
-        <TestQr seed={`${order.id}-${order.advanceDuePaise}`} />
-        <p className="text-xs font-semibold text-muted">Test Mode · not a live UPI code</p>
+        <p className="mt-4 text-xs font-semibold text-muted">UPI · cards · netbanking · wallets</p>
       </Card>
-      {phase === "verifying" ? <p className="mt-4 text-sm font-semibold text-green">Checking payment with the canteen server…</p> : null}
+      {phase === "paying" ? <p className="mt-4 text-sm font-semibold text-green">Waiting for Razorpay…</p> : null}
       {error ? <div className="mt-4"><ErrorNote>{error}</ErrorNote></div> : null}
     </Screen>
   );
 }
 
 export function BalanceScreen({ orderId }: { orderId: string }) {
-  const { data, verifyBalance } = useStore();
+  const { data, payBalance } = useStore();
   const order = data.orders.find((entry) => entry.id === orderId);
-  const [phase, setPhase] = useState<"idle" | "verifying">("idle");
+  const [phase, setPhase] = useState<"idle" | "paying">("idle");
   const [error, setError] = useState("");
 
   if (!order) {
@@ -209,27 +209,30 @@ export function BalanceScreen({ orderId }: { orderId: string }) {
   return (
     <Screen
       title="Balance payment"
-      eyebrow="Test Mode"
+      eyebrow="Razorpay"
       backHref={`/orders/${order.id}/`}
       footer={
         <Button
           className="w-full"
-          disabled={!ready || paid || phase === "verifying"}
+          disabled={!ready || paid || phase === "paying"}
           onClick={() => {
-            setPhase("verifying");
-            window.setTimeout(() => {
-              void verifyBalance(order.id).then((result) => {
-                if (!result.ok) {
-                  setPhase("idle");
-                  setError(result.error);
-                  return;
-                }
-                navigate(`/orders/${order.id}/`);
-              });
-            }, 900);
+            setError("");
+            setPhase("paying");
+            void payBalance(order.id).then((result) => {
+              setPhase("idle");
+              if (!result.ok) {
+                setError(result.error);
+                return;
+              }
+              navigate(`/orders/${order.id}/`);
+            });
           }}
         >
-          {paid ? "Balance already verified" : phase === "verifying" ? "Verifying…" : `Verify ${formatInr(order.balanceDuePaise)}`}
+          {paid
+            ? "Balance already paid"
+            : phase === "paying"
+              ? "Opening Razorpay…"
+              : `Pay ${formatInr(order.balanceDuePaise)}`}
         </Button>
       }
     >
@@ -237,26 +240,13 @@ export function BalanceScreen({ orderId }: { orderId: string }) {
         <p className="text-xs font-bold uppercase tracking-wider text-muted">Order {order.id}</p>
         <p className="mt-2 text-4xl font-extrabold text-green">{formatInr(order.balanceDuePaise)}</p>
         <p className="mt-1 text-sm text-muted">Remaining after {formatInr(order.advancePaidPaise)} advance</p>
-        <TestQr seed={`${order.id}-balance-${order.balanceDuePaise}`} />
+        <p className="mt-4 text-xs font-semibold text-muted">Pay securely with Razorpay</p>
       </Card>
       {!ready && !paid ? (
         <p className="mt-4 text-sm text-muted">The balance opens when the kitchen marks this order ready.</p>
       ) : null}
+      {phase === "paying" ? <p className="mt-4 text-sm font-semibold text-green">Waiting for Razorpay…</p> : null}
       {error ? <div className="mt-4"><ErrorNote>{error}</ErrorNote></div> : null}
     </Screen>
-  );
-}
-
-function TestQr({ seed }: { seed: string }) {
-  const cells = Array.from({ length: 81 }, (_, index) => {
-    const code = seed.charCodeAt(index % seed.length) + index * 17;
-    return code % 3 !== 0;
-  });
-  return (
-    <div className="mx-auto my-4 grid w-40 grid-cols-9 gap-0.5 rounded-lg bg-white p-2" aria-hidden="true">
-      {cells.map((on, index) => (
-        <span key={index} className={`aspect-square ${on ? "bg-house" : "bg-ceramic"}`} />
-      ))}
-    </div>
   );
 }

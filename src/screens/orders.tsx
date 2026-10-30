@@ -112,7 +112,7 @@ function OrderAction({ order, onCancel }: { order: Order; onCancel: () => void }
     );
   }
   if (order.status === "PENDING_BALANCE") {
-    return <p className="mt-4 text-sm leading-6 text-muted">Balance verified. Collect it at the counter during {order.slotLabel}.</p>;
+    return <p className="mt-4 text-sm leading-6 text-muted">Balance paid. Collect it at the counter during {order.slotLabel}.</p>;
   }
   if (order.status === "CONFIRMED" || order.status === "PREPARING") {
     return <p className="mt-4 text-sm leading-6 text-muted">The kitchen has this order. You will get an alert when it is ready.</p>;
@@ -120,7 +120,7 @@ function OrderAction({ order, onCancel }: { order: Order; onCancel: () => void }
   if (order.status === "COMPLETED") {
     return <p className="mt-4 text-sm leading-6 text-muted">Collected. This order is closed.</p>;
   }
-  return <p className="mt-4 text-sm leading-6 text-muted">This order was cancelled before the advance was verified.</p>;
+  return <p className="mt-4 text-sm leading-6 text-muted">This order was cancelled before the advance was paid.</p>;
 }
 
 export function NotificationsScreen() {

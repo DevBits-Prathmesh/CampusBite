@@ -459,28 +459,12 @@ export async function actOnOrder(user: PublicUser, orderId: string, action: stri
       }
       await client.query(`UPDATE orders SET status = 'CANCELLED', updated_at = now() WHERE id = $1`, [orderId]);
       await client.query(
+        `UPDATE payments SET status = 'CANCELLED', updated_at = now() WHERE order_id = $1 AND status = 'CREATED'`,
+        [orderId],
+      );
+      await client.query(
         `UPDATE pickup_slots SET reserved_count = GREATEST(reserved_count - 1, 0) WHERE id = $1`,
         [order.slot_id],
-      );
-      return;
-    }
-    if (action === "verify-advance") {
-      if (!owns) throw new HttpError("You can only pay for your own order.", 403);
-      if (order.status !== "PENDING_ADVANCE") return;
-      await client.query(
-        `UPDATE orders SET status = 'CONFIRMED', advance_paid_paise = advance_due_paise, updated_at = now() WHERE id = $1`,
-        [orderId],
-      );
-      return;
-    }
-    if (action === "verify-balance") {
-      if (!owns) throw new HttpError("You can only pay for your own order.", 403);
-      if (order.status !== "READY_FOR_PICKUP") {
-        throw new HttpError("The balance is due once the kitchen marks the order ready.", 409);
-      }
-      await client.query(
-        `UPDATE orders SET status = 'PENDING_BALANCE', balance_paid_paise = balance_due_paise, updated_at = now() WHERE id = $1`,
-        [orderId],
       );
       return;
     }

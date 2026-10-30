@@ -135,6 +135,20 @@ CREATE TABLE IF NOT EXISTS notifications (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   read_at TIMESTAMPTZ
 );
+
+CREATE TABLE IF NOT EXISTS payments (
+  id TEXT PRIMARY KEY,
+  order_id TEXT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL CHECK (kind IN ('advance', 'balance')),
+  amount_paise INTEGER NOT NULL,
+  status TEXT NOT NULL DEFAULT 'CREATED' CHECK (status IN ('CREATED', 'PAID', 'FAILED', 'CANCELLED')),
+  provider TEXT NOT NULL DEFAULT 'razorpay',
+  provider_order_id TEXT NOT NULL UNIQUE,
+  provider_payment_id TEXT UNIQUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 `;
 
 export function ensureSchema() {
@@ -146,6 +160,8 @@ export function ensureSchema() {
       await client.query(`
         CREATE INDEX IF NOT EXISTS orders_user_id_idx ON orders (user_id);
         CREATE INDEX IF NOT EXISTS notifications_user_id_idx ON notifications (user_id);
+        CREATE INDEX IF NOT EXISTS payments_order_id_idx ON payments (order_id);
+        CREATE INDEX IF NOT EXISTS payments_user_id_idx ON payments (user_id);
       `);
     } catch (error) {
       schema = null;
