@@ -41,8 +41,10 @@ type Store = {
   markCollected: (orderId: string) => Promise<Result>;
   markNotificationRead: (id: string) => Promise<void>;
   saveMenuItem: (item: MenuItem, isNew: boolean) => Promise<Result>;
+  deleteMenuItem: (itemId: string) => Promise<Result>;
   saveSlot: (slot: PickupSlot, isNew: boolean) => Promise<Result>;
   setUserRole: (userId: string, role: Role) => Promise<Result>;
+  deleteUser: (userId: string) => Promise<Result>;
   createStaff: (name: string, email: string, password: string, role: Role) => Promise<Result>;
 };
 
@@ -321,6 +323,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           else await request(`/api/menu/${item.id}/`, { method: "PATCH", body: JSON.stringify(item) });
           await refresh();
         }),
+      deleteMenuItem: (itemId) =>
+        attempt(async () => {
+          await request(`/api/menu/${itemId}/`, { method: "DELETE" });
+          await refresh();
+        }),
       saveSlot: (slot, isNew) =>
         attempt(async () => {
           if (isNew) await request("/api/slots/", { method: "POST", body: JSON.stringify(slot) });
@@ -330,6 +337,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setUserRole: (userId, role) =>
         attempt(async () => {
           await request(`/api/users/${userId}/`, { method: "PATCH", body: JSON.stringify({ role }) });
+          await refresh();
+        }),
+      deleteUser: (userId) =>
+        attempt(async () => {
+          await request(`/api/users/${userId}/`, { method: "DELETE" });
           await refresh();
         }),
       createStaff: (name, email, password, role) =>

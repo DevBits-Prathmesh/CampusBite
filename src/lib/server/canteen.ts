@@ -295,6 +295,12 @@ async function visibleUsers(user: PublicUser | null, orders: Order[]) {
   return rows.map(publicUser);
 }
 
+export async function deleteMenuItem(user: PublicUser, itemId: string) {
+  requireRole(user, ["admin"]);
+  const deleted = await query(`DELETE FROM menu_items WHERE id = $1 RETURNING id`, [itemId]);
+  if (!deleted.length) throw new HttpError("That dish is not on the menu.", 404);
+}
+
 export async function saveMenuItem(user: PublicUser, item: MenuItem, isNew: boolean) {
   requireRole(user, ["admin"]);
   const name = item.name.trim();
@@ -369,6 +375,31 @@ export async function setUserRole(actor: PublicUser, userId: string, role: Role)
       throw new HttpError("Administrator accounts stay as they are in the database.", 400);
     }
     await client.query(`UPDATE users SET role = $2 WHERE id = $1`, [userId, role]);
+  });
+}
+
+export async function deleteUserAccount(actor: PublicUser, userId: string) {
+  requireRole(actor, ["admin"]);
+  if (userId === actor.id) throw new HttpError("You cannot delete your own account.", 400);
+  await withTransaction(async (client) => {
+    const target = await client.query<{ role: Role }>(`SELECT role FROM users WHERE id = $1 FOR UPDATE`, [userId]);
+    const account = target.rows[0];
+    if (!account) throw new HttpError("Account not found.", 404);
+    if (account.role === "admin") {
+      throw new HttpError("Administrator accounts cannot be deleted here.", 400);
+    }
+    const orders = await client.query(`SELECT 1 FROM orders WHERE user_id = $1 LIMIT 1`, [userId]);
+    if (orders.rowCount) {
+      throw new HttpError("This account has order history. Change its role instead of deleting it.", 409);
+    }
+    try {
+      await client.query(`DELETE FROM users WHERE id = $1`, [userId]);
+    } catch (error) {
+      if ((error as { code?: string }).code === "23503") {
+        throw new HttpError("This account has order history. Change its role instead of deleting it.", 409);
+      }
+      throw error;
+    }
   });
 }
 

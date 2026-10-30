@@ -32,7 +32,8 @@ export function AdminHomeScreen() {
 }
 
 export function AdminMenuScreen() {
-  const { data, saveMenuItem } = useStore();
+  const { data, saveMenuItem, deleteMenuItem } = useStore();
+  const [error, setError] = useState("");
   return (
     <Screen
       title="Menu"
@@ -53,16 +54,29 @@ export function AdminMenuScreen() {
                 </span>
               </span>
             </button>
-            <Button
-              variant="outline"
-              className="mt-3 h-10 w-full"
-              onClick={() => void saveMenuItem({ ...item, isAvailable: !item.isAvailable }, false)}
-            >
-              {item.isAvailable ? "Mark unavailable" : "Mark available"}
-            </Button>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <Button
+                variant="outline"
+                className="h-10 w-full text-sm"
+                onClick={() => void saveMenuItem({ ...item, isAvailable: !item.isAvailable }, false)}
+              >
+                {item.isAvailable ? "Mark unavailable" : "Mark available"}
+              </Button>
+              <Button
+                variant="danger"
+                className="h-10 w-full text-sm"
+                onClick={() => {
+                  if (!window.confirm(`Delete "${item.name}" from the menu? Past orders keep their record.`)) return;
+                  void deleteMenuItem(item.id).then((result) => setError(result.ok ? "" : result.error));
+                }}
+              >
+                Delete
+              </Button>
+            </div>
           </Card>
         ))}
       </div>
+      {error ? <div className="mt-4"><ErrorNote>{error}</ErrorNote></div> : null}
     </Screen>
   );
 }
@@ -211,7 +225,7 @@ export function SlotFormScreen({ slotId }: { slotId: string | null }) {
 }
 
 export function StaffScreen() {
-  const { data, setUserRole, createStaff } = useStore();
+  const { data, setUserRole, createStaff, deleteUser } = useStore();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -282,6 +296,18 @@ export function StaffScreen() {
                 </select>
               </label>
             )}
+            {account.role !== "admin" ? (
+              <Button
+                variant="danger"
+                className="mt-2 h-10 w-full text-sm"
+                onClick={() => {
+                  if (!window.confirm(`Delete ${account.name}'s account?`)) return;
+                  void deleteUser(account.id).then((result) => setError(result.ok ? "" : result.error));
+                }}
+              >
+                Delete account
+              </Button>
+            ) : null}
           </Card>
         ))}
       </div>
